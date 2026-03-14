@@ -6,7 +6,6 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 		{
 			// 1, 2, 4, 8, 16, 32 - higher number, more extreme
 			int infractions = 0;
-			char separator = File.;
 			if (!Directory.Exists(GetFullPath("config/"))) infractions += 32;
 			if (!Directory.Exists(GetFullPath("assets/"))) infractions += 16;
 			if (!Directory.Exists(GetFullPath("fonts/"))) infractions += 8;
