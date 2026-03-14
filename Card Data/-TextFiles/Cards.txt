@@ -1,1 +1,1 @@
-Test	1	2	This is a test Ability. It does nothing but show me how the gen is doing so far.			Ally	3	4	Villain	
+Test	1	2	This Ally does something. % This Ally is an \Ally!			Ally	3	4	Villain	

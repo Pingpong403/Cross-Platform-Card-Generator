@@ -6,11 +6,12 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 {
 	public static class PrepareText
 	{
-		public static void DrawTitle(string text, SKFont font, SKColor color, int maxWidth, int maxHeight)
+		public static void DrawTitle(string text, string fontName, int fontSize, SKColor color, int maxWidth, int maxHeight)
 		{
 			// Setup variables
 			float granularity = float.Parse(ValueFetching.GetConfigValue("text", "titleFontDecreaseGranularity"));
 			float lineSpacingFactor = float.Parse(ValueFetching.GetConfigValue("text", "titleLineSpacingFactor"));
+			SKFont font = FontLoader.GetFont(fontName, fontSize, SKFontStyle.Normal);
 
 			// Remove duplicate designation
 			if (text[^1] == ')' && text[^3] == '(')
@@ -25,14 +26,14 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			using var b = new SKBitmap(maxWidth, maxHeight);
 			using var c = new SKCanvas(b);
 			c.Clear(SKColors.Transparent);
-			List<CardWord> words = GetCardWords(text, color, font, null);
+			List<CardWord> words = GetCardWords(text, color, fontName, fontSize, null);
 
 			// Find proper font size given line number
 			float lineHeight;
 			SKSize textSize;
 			do
 			{
-				words = GetCardWords(text, color, font, null);
+				words = GetCardWords(text, color, fontName, fontSize, null);
 				lineHeight = font.Size * lineSpacingFactor;
 				textSize = MeasureWordByWord(words, 10000, lineHeight, lineSpacingFactor);
 				if (textSize.Height > maxHeight) font = new SKFont(font.Typeface, font.Size - granularity);
@@ -58,7 +59,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			b.Encode(outpath, SKEncodedImageFormat.Png, 100);
 		}
 
-		public static void DrawAbility(string ability, string activateAbility, string activateCost, string gainsAction, SKFont font, SKColor color, int maxWidth, int maxHeight, Dictionary<string, string> keywordsAndColors)
+		public static void DrawAbility(string ability, string activateAbility, string activateCost, string gainsAction, string fontName, int fontSize, SKColor color, int maxWidth, int maxHeight, Dictionary<string, string> keywordsAndColors)
 		{
 			// Set up variables we'll potentially need
 			float granularity = float.Parse(ValueFetching.GetConfigValue("text", "fontDecreaseGranularity"));
@@ -70,6 +71,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			int sideAAMaxW = int.Parse(ValueFetching.GetConfigValue("card", "sideActivateAbilityMaxWidth"));
 			int sideAACenterX = int.Parse(ValueFetching.GetConfigValue("card", "sideActivateAbilityCenterX"));
 			bool useAltAssets = ValueFetching.GetSettingsValue("Card", "useAlternateAssets") == "true";
+			SKFont font = FontLoader.GetFont(fontName, fontSize, SKFontStyle.Normal);
 
 			using var b = new SKBitmap(maxWidth, maxHeight);
 			using var c = new SKCanvas(b);
@@ -87,23 +89,23 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			{
 				// Combine every given ability into one metric
 				lineHeight = font.Size * lineSpacing;
-				abilityHeight = ability == "" ? 0 : MeasureWordByWord(GetCardWords(ability, color, font, keywordsAndColors), maxWidth, lineHeight, lineSpacing).Height;
+				abilityHeight = ability == "" ? 0 : MeasureWordByWord(GetCardWords(ability, color, fontName, fontSize, keywordsAndColors), maxWidth, lineHeight, lineSpacing).Height;
 				activateAbilityHeight = 0;
 				if (activateAbility != "" || activateCost != "")
 				{
 					if (ability == "" || activateCost != "") // If there is no ability or there is an activate cost, measure normally
 					{
-						activateAbilityHeight += actionSymbolLines * lineHeight + MeasureWordByWord(GetCardWords(activateAbility, color, font, keywordsAndColors), maxWidth, lineHeight, lineSpacing).Height;
+						activateAbilityHeight += actionSymbolLines * lineHeight + MeasureWordByWord(GetCardWords(activateAbility, color, fontName, fontSize, keywordsAndColors), maxWidth, lineHeight, lineSpacing).Height;
 					}
 					else
 					{
-						float aaTextHeight = MeasureWordByWord(GetCardWords(activateAbility, color, font, keywordsAndColors), sideAAMaxW, lineHeight, lineSpacing).Height;
+						float aaTextHeight = MeasureWordByWord(GetCardWords(activateAbility, color, fontName, fontSize, keywordsAndColors), sideAAMaxW, lineHeight, lineSpacing).Height;
 						float aaSymbolHeight = actionSymbolLines * lineHeight;
 						activateAbilityTextTaller = aaTextHeight > aaSymbolHeight;
 						activateAbilityHeight += Math.Max(aaSymbolHeight, aaTextHeight);
 					}
 				}
-				gainsActionHeight = gainsAction == "" ? 0 : MeasureWordByWord(GetCardWords(gainsAction, color, font, keywordsAndColors), maxWidth, lineHeight, lineSpacing).Height;
+				gainsActionHeight = gainsAction == "" ? 0 : MeasureWordByWord(GetCardWords(gainsAction, color, fontName, fontSize, keywordsAndColors), maxWidth, lineHeight, lineSpacing).Height;
 				int numPadding = (abilityHeight > 0 ? 1 : 0) + (activateAbilityHeight > 0 ? 1 : 0) + (gainsActionHeight > 0 ? 1 : 0) - 1;
 				if (numPadding < 0) numPadding = 0;
 				paddingHeight = numPadding * lineHeight * paddingLines;
@@ -118,7 +120,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 				Console.WriteLine($"The following card's Ability went below the minimum {minFontSize}px:");
 			}
 
-			List<CardWord> colon = GetCardWords(":", color, font, keywordsAndColors);
+			List<CardWord> colon = GetCardWords(":", color, fontName, fontSize, keywordsAndColors);
 
 			// Drawing variables
 			float currentY = (maxHeight - textHeight) / 2;
@@ -127,7 +129,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			// Draw the ability first
 			if (ability != "")
 			{
-				words = GetCardWords(ability, color, font, keywordsAndColors);
+				words = GetCardWords(ability, color, fontName, fontSize, keywordsAndColors);
 				currentY = DrawWordByWord(words, c, maxWidth, lineHeight, maxWidth / 2, currentY, lineSpacing);
 				currentY += lineHeight * paddingLines;
 			}
@@ -163,19 +165,19 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 					{
 						float costLeftX = colonCenterX + colonPadding;
 						float activateCostWidth = maxWidth / 2;
-						float activateCostHeight = MeasureWordByWord(GetCardWords(activateCost, color, font, keywordsAndColors), activateCostWidth, lineHeight, lineSpacing).Height;
+						float activateCostHeight = MeasureWordByWord(GetCardWords(activateCost, color, fontName, fontSize, keywordsAndColors), activateCostWidth, lineHeight, lineSpacing).Height;
 						float activateCostY = currentY + (actionSymbolLines * lineHeight - activateCostHeight) / 2; // maximum of 3 lines for clarity
 						if (drawColon)
 						{
 							float costCenterX = costLeftX + font.MeasureText(activateCost) / 2;
 							DrawWordByWord(colon, c, maxWidth, lineHeight, colonCenterX, activateCostY, lineSpacing);
-							words = GetCardWords(activateCost, color, font, keywordsAndColors);
+							words = GetCardWords(activateCost, color, fontName, fontSize, keywordsAndColors);
 							DrawWordByWord(words, c, activateCostWidth, lineHeight, costCenterX, activateCostY, lineSpacing);
 						}
 						else
 						{
 							float costCenterX = costLeftX + font.MeasureText(activateCost) / 2;
-							words = GetCardWords(activateCost, color, font, keywordsAndColors);
+							words = GetCardWords(activateCost, color, fontName, fontSize, keywordsAndColors);
 							DrawWordByWord(words, c, activateCostWidth, lineHeight, maxWidth / 2 + costCenterX, activateCostY, lineSpacing);
 						}
 					}
@@ -184,7 +186,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 					// Ability, if any
 					if (activateAbility != "")
 					{
-						words = GetCardWords(activateAbility, color, font, keywordsAndColors);
+						words = GetCardWords(activateAbility, color, fontName, fontSize, keywordsAndColors);
 						currentY = DrawWordByWord(words, c, maxWidth, lineHeight, maxWidth / 2, currentY, lineSpacing);
 					}
 				}
@@ -195,7 +197,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 					DrawSymbol(activateSymbol, c, symbolCenterX, currentY + activateAbilityHeight / 2, resizing);
 					
 					// Activate ability
-					words = GetCardWords(activateAbility, color, font, keywordsAndColors);
+					words = GetCardWords(activateAbility, color, fontName, fontSize, keywordsAndColors);
 					float drawY = currentY;
 					if (!activateAbilityTextTaller)
 					{
@@ -210,7 +212,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			// Finally, draw the gained action
 			if (gainsAction != "")
 			{
-				words = GetCardWords(gainsAction, color, font, keywordsAndColors);
+				words = GetCardWords(gainsAction, color, fontName, fontSize, keywordsAndColors);
 				DrawWordByWord(words, c, maxWidth, lineHeight, maxWidth / 2, currentY, lineSpacing);
 			}
 
@@ -488,7 +490,8 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 					{
 						SKFont gainPowerFont = FontLoader.GetFont(
 							ValueFetching.GetConfigValue("text", "elementFont"),
-							(int)(float.Parse(ValueFetching.GetConfigValue("text", "costFontSize")) * resizing)
+							(int)(float.Parse(ValueFetching.GetConfigValue("text", "costFontSize")) * resizing),
+							SKFontStyle.Bold
 						);
 						SKPoint gainPowerPos = new(
 							(int)maxWidth,
@@ -514,12 +517,20 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 
 		private static void DrawSymbol(SKImage symbol, SKCanvas c, float centerX, float centerY, float resizing = 1.0F)
 		{
+			int newWidth = (int)(symbol.Width * resizing);
+			int newHeight = (int)(symbol.Height * resizing);
+			var resized = new SKBitmap(newWidth, newHeight);
+			using (var newC = new SKCanvas(resized))
+			{
+				newC.Clear(SKColors.Transparent);
+				newC.DrawImage(symbol, new SKRect(0, 0, newWidth, newHeight));
+			}
 			float x = centerX - resizing * symbol.Width / 2;
 			float y = centerY - resizing * symbol.Height / 2;
-			c.DrawImage(symbol, new SKPoint(x, y));
+			c.DrawBitmap(resized, new SKPoint(x, y));
 		}
 
-		public static List<CardWord> GetCardWords(string text, SKColor defaultColor, SKFont defaultFont, Dictionary<string, string>? keywordData, bool isType = false)
+		public static List<CardWord> GetCardWords(string text, SKColor defaultColor, string defaultFontName, int defaultFontSize, Dictionary<string, string>? keywordData, bool isType = false)
 		{
 			bool typeIsCaps = ValueFetching.GetConfigValue("text", "typeIsCaps") == "true";
 			bool typeInAbilityIsBold = ValueFetching.GetConfigValue("text", "typeInAbilityIsBold") == "true";
@@ -529,9 +540,10 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			char escapeSymbol = Convert.ToChar(ValueFetching.GetConfigValue("text", "escapeCharacter"));
 			char newlineSymbol = Convert.ToChar(ValueFetching.GetConfigValue("text", "newlineCharacter"));
 
-			SKFont italicFont = defaultFont;
-			SKFont boldFont = defaultFont;
-			SKFont boldItalicFont = defaultFont;
+			SKFont defaultFont = FontLoader.GetFont(defaultFontName, defaultFontSize, SKFontStyle.Normal);
+			SKFont italicFont = FontLoader.GetFont(defaultFontName, defaultFontSize, SKFontStyle.Italic);
+			SKFont boldFont = FontLoader.GetFont(defaultFontName, defaultFontSize, SKFontStyle.Bold);
+			SKFont boldItalicFont = FontLoader.GetFont(defaultFontName, defaultFontSize, SKFontStyle.BoldItalic);
 
 			List<CardWord> cardWords = [];
 
@@ -587,26 +599,6 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 				{
 					if (letter == italicSymbol)
 					{
-						italicsOpen = !italicsOpen;
-						if (builtWord != "")
-						{
-							bool isKeyword = keywordData != null && keywordData.TryGetValue(builtWord, out string? value);
-							bool boldWord = (isKeyword && (isType || typeInAbilityIsBold)) && !boldOpen ||
-										   !(isKeyword && (isType || typeInAbilityIsBold)) && boldOpen;
-							CardWord word = new(
-								builtWord,
-								isKeyword && !ignoreFormatting ? ColorConverter.FromHtml(keywordData[builtWord]) : defaultColor,
-								boldWord && !ignoreFormatting ? (!italicsOpen ? boldItalicFont : boldFont) : !italicsOpen ? italicFont : defaultFont
-							);
-							word.SetType(isType);
-							if (isType && typeIsCaps) word.SetText(word.GetText().ToUpper());
-							cardWords.Add(word);
-							builtWord = "";
-						}
-					}
-					else if (letter == boldSymbol)
-					{
-						boldOpen = !boldOpen;
 						if (builtWord != "")
 						{
 							bool isKeyword = keywordData != null && keywordData.TryGetValue(builtWord, out string? value);
@@ -622,6 +614,26 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 							cardWords.Add(word);
 							builtWord = "";
 						}
+						italicsOpen = !italicsOpen;
+					}
+					else if (letter == boldSymbol)
+					{
+						if (builtWord != "")
+						{
+							bool isKeyword = keywordData != null && keywordData.TryGetValue(builtWord, out string? value);
+							bool boldWord = (isKeyword && (isType || typeInAbilityIsBold)) && !boldOpen ||
+										   !(isKeyword && (isType || typeInAbilityIsBold)) && boldOpen;
+							CardWord word = new(
+								builtWord,
+								isKeyword && !ignoreFormatting ? ColorConverter.FromHtml(keywordData[builtWord]) : defaultColor,
+								boldWord && !ignoreFormatting ? (italicsOpen ? boldItalicFont : boldFont) : italicsOpen ? italicFont : defaultFont
+							);
+							word.SetType(isType);
+							if (isType && typeIsCaps) word.SetText(word.GetText().ToUpper());
+							cardWords.Add(word);
+							builtWord = "";
+						}
+						boldOpen = !boldOpen;
 					}
 					else if (letter == escapeSymbol)
 					{
@@ -703,14 +715,14 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 			{
 				text = "";
 				textColor = SKColors.Black;
-				textFont = FontLoader.GetFont(ValueFetching.GetConfigValue("text", "altFont"), 1);
+				textFont = FontLoader.GetFont(ValueFetching.GetConfigValue("text", "altFont"), 1, SKFontStyle.Normal);
 			}
 
 			public CardWord(string text)
 			{
 				this.text = text;
 				textColor = SKColors.Black;
-				textFont = FontLoader.GetFont(ValueFetching.GetConfigValue("text", "altFont"), 1);
+				textFont = FontLoader.GetFont(ValueFetching.GetConfigValue("text", "altFont"), 1, SKFontStyle.Normal);
 			}
 
 			public CardWord(string text, SKColor textColor, SKFont textFont)
@@ -739,9 +751,17 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 
 			public SKSize GetSizeF()
 			{
-				using var path = textFont.GetTextPath(text);
-				SKRect bounds = path.Bounds;
-				return new SKSize(bounds.Width, bounds.Height);
+				if (text != " ")
+				{
+					using var path = textFont.GetTextPath(text);
+					SKRect bounds = path.Bounds;
+					return new SKSize(bounds.Width * (!TextManipulation.IsPunctuation(text) ? 1.05f : 1f), bounds.Height);
+				}
+				else
+				{
+					var paint = new SKPaint{ Color = textColor, Style = SKPaintStyle.Fill };
+					return new SKSize(textFont.MeasureText(text), textFont.Size);
+				}
 			}
 		}
 	}

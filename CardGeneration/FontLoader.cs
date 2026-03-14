@@ -5,7 +5,7 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 {
 	public static class FontLoader
 	{
-		public static SKFont GetFont(string fontName, int size)
+		public static SKFont GetFont(string fontName, int size, SKFontStyle fontStyle)
 		{
 			string fontPath = Structuring.GetFullPath(Path.Combine("fonts", fontName));
 			if (!File.Exists(fontPath))
@@ -14,7 +14,8 @@ namespace CrossPlatform_Card_Generator.CardGeneration
 				fontPath = Structuring.GetFullPath(Path.Combine("fonts", altFont));
 			}
 			SKFontManager fm = SKFontManager.CreateDefault();
-			SKTypeface tf = fm.CreateTypeface(fontPath);
+			SKTypeface templateTypeFace = fm.CreateTypeface(fontPath);
+			SKTypeface tf = SKTypeface.FromFamilyName(templateTypeFace.FamilyName, fontStyle);
 			SKFont font = new(tf, size);
 			return font;
 		}
